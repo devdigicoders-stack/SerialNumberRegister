@@ -55,7 +55,7 @@ export default function RecordsTable({
     showToast(`✓ Exported ${filteredRecords.length} records (${tabName})!`, 'success');
   };
 
-  // Print ONLY the table of currently active tab / filtered data
+  // Print ONLY the table directly on the same page (No new tab/page)
   const handlePrint = () => {
     if (filteredRecords.length === 0) {
       showToast('No records to print in this tab!', 'warning');
@@ -68,12 +68,6 @@ export default function RecordsTable({
         : currentFilter === 'unique'
         ? 'Unique Only'
         : 'All Records';
-
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
-    if (!printWindow) {
-      showToast('Popup blocked! Please allow popups to print report.', 'warning');
-      return;
-    }
 
     const rowsHtml = filteredRecords
       .map(
@@ -101,23 +95,22 @@ export default function RecordsTable({
         <title>Barcode Register Report - ${tabLabel}</title>
         <style>
           * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-          body { padding: 24px; color: #1e293b; background: #fff; }
-          .header { border-bottom: 2px solid #16325c; padding-bottom: 14px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-end; }
-          .title { font-size: 22px; font-weight: 800; color: #16325c; margin: 0 0 4px 0; }
+          body { padding: 20px; color: #1e293b; background: #fff; margin: 0; }
+          .header { border-bottom: 2px solid #16325c; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+          .title { font-size: 20px; font-weight: 800; color: #16325c; margin: 0 0 4px 0; }
           .meta { font-size: 13px; color: #64748b; }
-          .report-info { text-align: right; font-size: 13px; color: #475569; }
+          .report-info { text-align: right; font-size: 12.5px; color: #475569; }
           table { width: 100%; border-collapse: collapse; margin-top: 10px; }
           th { background: #f1f5f9; color: #334155; text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; }
-          td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
+          td { padding: 9px 12px; font-size: 13px; border-bottom: 1px solid #e2e8f0; }
           tr:nth-child(even) { background-color: #f8fafc; }
           .duplicate-row { background-color: #fffbeb !important; }
           .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
           .badge-uniq { background: #dcfce7; color: #15803d; }
           .badge-dup { background: #fef3c7; color: #b45309; }
-          .footer { margin-top: 24px; font-size: 12px; color: #94a3b8; text-align: center; border-top: 1px dashed #e2e8f0; padding-top: 12px; }
+          .footer { margin-top: 20px; font-size: 12px; color: #94a3b8; text-align: center; border-top: 1px dashed #e2e8f0; padding-top: 10px; }
           @media print {
-            body { padding: 0; }
-            @page { margin: 15mm; }
+            @page { margin: 12mm; }
           }
         </style>
       </head>
@@ -128,7 +121,7 @@ export default function RecordsTable({
             <div class="meta">Report View: <b>${tabLabel}</b> | Total Entries: <b>${filteredRecords.length}</b></div>
           </div>
           <div class="report-info">
-            <div><b>Generated Date:</b> ${new Date().toLocaleDateString()}</div>
+            <div><b>Date:</b> ${new Date().toLocaleDateString()}</div>
             <div><b>Time:</b> ${new Date().toLocaleTimeString()}</div>
           </div>
         </div>
@@ -152,20 +145,32 @@ export default function RecordsTable({
         <div class="footer">
           Printed from Serial Number Register System &bull; ${new Date().toLocaleString()}
         </div>
-
-        <script>
-          window.onload = function() {
-            window.focus();
-            window.print();
-          };
-        </script>
       </body>
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    let iframe = document.getElementById('print_frame');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'print_frame';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+    }
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    iframe.contentWindow.focus();
+    setTimeout(() => {
+      iframe.contentWindow.print();
+    }, 150);
   };
 
   const escapeCsv = (str) => {
