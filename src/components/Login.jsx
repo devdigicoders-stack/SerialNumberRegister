@@ -54,14 +54,15 @@ export default function Login({ onLogin, showToast }) {
           <p>Name & Barcode Register System</p>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="loginUsername">
-              <i className="fa-solid fa-user"></i> Username
+        <form onSubmit={handleSubmit}>
+          <div className="form-field">
+            <label className="field-label" htmlFor="loginUsername">
+              <span><i className="fa-solid fa-user" style={{ marginRight: '6px', color: '#64748b' }}></i> Username</span>
             </label>
             <input
               type="text"
               id="loginUsername"
+              className="input-box"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter username"
@@ -70,14 +71,16 @@ export default function Login({ onLogin, showToast }) {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="loginPassword">
-              <i className="fa-solid fa-lock"></i> Password
+          <div className="form-field">
+            <label className="field-label" htmlFor="loginPassword">
+              <span><i className="fa-solid fa-lock" style={{ marginRight: '6px', color: '#64748b' }}></i> Password</span>
             </label>
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="loginPassword"
+                className="input-box"
+                style={{ paddingRight: '42px' }}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
@@ -95,8 +98,8 @@ export default function Login({ onLogin, showToast }) {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            <i className="fa-solid fa-right-to-bracket"></i>{' '}
+          <button type="submit" className="btn-block-primary" disabled={loading}>
+            <i className="fa-solid fa-right-to-bracket" style={{ marginRight: '8px' }}></i>
             {loading ? 'Logging in...' : 'Login to Admin Panel'}
           </button>
         </form>
