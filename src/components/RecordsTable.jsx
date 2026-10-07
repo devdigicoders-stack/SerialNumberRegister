@@ -128,14 +128,7 @@ export default function RecordsTable({
             <i className="fa-solid fa-file-csv"></i> CSV
           </button>
           <button className="btn-action-tool" onClick={handlePrint} title="Print Report">
-            <i className="fa-solid fa-print"></i>
-          </button>
-          <button
-            className="btn-action-tool btn-action-danger"
-            onClick={onClearAll}
-            title="Clear All Records"
-          >
-            <i className="fa-solid fa-trash-can"></i>
+            <i className="fa-solid fa-print"></i> Print
           </button>
         </div>
       </div>

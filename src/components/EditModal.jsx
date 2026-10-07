@@ -24,45 +24,49 @@ export default function EditModal({ record, onClose, onSave }) {
       <div className="modal-dialog">
         <div className="modal-header">
           <h3>
-            <i className="fa-solid fa-pen-to-square"></i> Edit Entry
+            <i className="fa-solid fa-pen-to-square" style={{ color: '#1976d2' }}></i> Edit Entry
           </h3>
-          <button className="btn-close-modal" onClick={onClose}>
+          <button className="btn-close-modal" onClick={onClose} title="Close">
             <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            <div className="form-group">
-              <label htmlFor="editName">
-                <i className="fa-solid fa-user-tag"></i> Name
+            <div className="form-field">
+              <label className="field-label" htmlFor="editName">
+                <span><i className="fa-solid fa-user" style={{ marginRight: '6px', color: '#64748b' }}></i> Name</span>
               </label>
               <input
                 type="text"
                 id="editName"
+                className="input-box"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                placeholder="Enter name"
                 required
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="editBarcode">
-                <i className="fa-solid fa-barcode"></i> Barcode / Serial Number
+            <div className="form-field" style={{ marginBottom: 0 }}>
+              <label className="field-label" htmlFor="editBarcode">
+                <span><i className="fa-solid fa-barcode" style={{ marginRight: '6px', color: '#64748b' }}></i> Barcode / Serial Number</span>
               </label>
               <input
                 type="text"
                 id="editBarcode"
+                className="input-box barcode-input"
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
+                placeholder="Enter barcode"
                 required
               />
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn btn-light" onClick={onClose}>
+            <button type="button" className="btn-secondary-gray" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn-primary-blue">
               <i className="fa-solid fa-floppy-disk"></i> Save Changes
             </button>
           </div>

@@ -776,13 +776,33 @@ body {
   gap: 8px;
 }
 
+.btn-danger-red {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+
+.btn-danger-red:hover {
+  background: #dc2626;
+}
+
 .delete-record-preview {
   margin-top: 10px;
-  background: #f1f5f9;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  border-left: 3px solid #ef4444;
+  background: #f8fafc;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid #ef4444;
 }
 
 /* ================= TOASTS ================= */

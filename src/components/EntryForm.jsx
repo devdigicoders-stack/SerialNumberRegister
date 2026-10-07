@@ -60,10 +60,9 @@ export default function EntryForm({ onAddEntry, isSoundEnabled, setIsSoundEnable
   };
 
   const handleClear = () => {
-    setName('');
     setBarcode('');
     setLiveStatus(null);
-    if (nameInputRef.current) nameInputRef.current.focus();
+    focusScanner();
   };
 
   return (

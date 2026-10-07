@@ -10,28 +10,30 @@ export default function DeleteModal({ record, onClose, onConfirm }) {
           <h3>
             <i className="fa-solid fa-triangle-exclamation"></i> Confirm Delete
           </h3>
-          <button className="btn-close-modal" onClick={onClose}>
+          <button className="btn-close-modal" onClick={onClose} title="Close">
             <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
         <div className="modal-body">
-          <p>Are you sure you want to delete this record?</p>
+          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '10px' }}>
+            Are you sure you want to delete this record? This action cannot be undone.
+          </p>
           <div className="delete-record-preview">
-            <div>
-              <b>Name:</b> {record.name}
+            <div style={{ marginBottom: '4px' }}>
+              <span style={{ color: '#64748b' }}>Name:</span> <b>{record.name}</b>
             </div>
             <div>
-              <b>Barcode:</b> <code>{record.barcode}</code>
+              <span style={{ color: '#64748b' }}>Barcode:</span> <code style={{ fontWeight: 700, color: '#1e293b' }}>{record.barcode}</code>
             </div>
           </div>
         </div>
         <div className="modal-footer">
-          <button type="button" className="btn btn-light" onClick={onClose}>
+          <button type="button" className="btn-secondary-gray" onClick={onClose}>
             Cancel
           </button>
           <button
             type="button"
-            className="btn btn-danger"
+            className="btn-danger-red"
             onClick={() => onConfirm(record.id)}
           >
             <i className="fa-solid fa-trash"></i> Delete
