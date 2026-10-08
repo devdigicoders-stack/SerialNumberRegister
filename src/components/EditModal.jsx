@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 
 export default function EditModal({ record, onClose, onSave }) {
   const [name, setName] = useState('');
+  const [crNumber, setCrNumber] = useState('');
   const [barcode, setBarcode] = useState('');
 
   useEffect(() => {
     if (record) {
       setName(record.name || '');
+      setCrNumber(record.crNumber || '');
       setBarcode(record.barcode || '');
     }
   }, [record]);
@@ -16,7 +18,7 @@ export default function EditModal({ record, onClose, onSave }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim() || !barcode.trim()) return;
-    onSave(record.id, name.trim(), barcode.trim());
+    onSave(record.id, name.trim(), barcode.trim(), crNumber.trim());
   };
 
   return (
@@ -44,6 +46,20 @@ export default function EditModal({ record, onClose, onSave }) {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter name"
                 required
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="field-label" htmlFor="editCrNumber">
+                <span><i className="fa-solid fa-hashtag" style={{ marginRight: '6px', color: '#64748b' }}></i> CR Number</span>
+              </label>
+              <input
+                type="text"
+                id="editCrNumber"
+                className="input-box"
+                value={crNumber}
+                onChange={(e) => setCrNumber(e.target.value)}
+                placeholder="Enter CR number"
               />
             </div>
 

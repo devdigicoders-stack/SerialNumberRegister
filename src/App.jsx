@@ -23,6 +23,7 @@ export default function App() {
   });
 
   const [records, setRecords] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     totalRecords: 0,
     uniqueSerials: 0,
@@ -49,6 +50,7 @@ export default function App() {
 
   // Fetch records from backend
   const fetchRecords = useCallback(async () => {
+    setIsLoading(true);
     try {
       const res = await fetch(`${API_BASE}/api/records`);
       if (res.ok) {
@@ -67,6 +69,8 @@ export default function App() {
           computeAndSetLocal(recs);
         } catch (e) {}
       }
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -117,23 +121,39 @@ export default function App() {
     showToast('Logged out successfully.', 'info');
   };
 
-  // Add Entry
-  const handleAddEntry = async (name, barcode) => {
+  // Add Entry (supports single barcode or multiple scans array)
+  const handleAddEntry = async (name, barcodes, crNumber = '') => {
+    const barcodeList = Array.isArray(barcodes)
+      ? barcodes.map((b) => String(b).trim()).filter(Boolean)
+      : [String(barcodes).trim()].filter(Boolean);
+
+    if (!name || barcodeList.length === 0) return;
+
     try {
       const res = await fetch(`${API_BASE}/api/records`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, barcode })
+        body: JSON.stringify({ name, barcodes: barcodeList, crNumber })
       });
 
       if (res.ok) {
         const data = await res.json();
         if (data.isDuplicate) {
           playAudioFeedback('duplicate', isSoundEnabled);
-          showToast(`⚠️ Duplicate recorded for "${barcode}"!`, 'warning');
+          showToast(
+            barcodeList.length > 1
+              ? `⚠️ ${barcodeList.length} scans saved (Includes duplicates)!`
+              : `⚠️ Duplicate recorded for "${barcodeList[0]}"!`,
+            'warning'
+          );
         } else {
           playAudioFeedback('success', isSoundEnabled);
-          showToast(`✓ Added "${barcode}" for ${name}`, 'success');
+          showToast(
+            barcodeList.length > 1
+              ? `✓ Added ${barcodeList.length} scans for ${name}`
+              : `✓ Added "${barcodeList[0]}" for ${name}`,
+            'success'
+          );
         }
         fetchRecords();
       } else {
@@ -141,34 +161,39 @@ export default function App() {
       }
     } catch (err) {
       // Offline local fallback
-      const existing = (frequencyMap[barcode] || 0) > 0;
-      const newRec = {
-        id: 'rec_' + Date.now(),
-        name,
-        barcode,
-        timestamp: new Date().toISOString()
-      };
-      const updated = [newRec, ...records];
+      let anyDuplicate = false;
+      const newRecs = barcodeList.map((code, idx) => {
+        if ((frequencyMap[code] || 0) > 0) anyDuplicate = true;
+        return {
+          id: 'rec_' + (Date.now() + idx),
+          name,
+          crNumber,
+          barcode: code,
+          timestamp: new Date().toISOString()
+        };
+      });
+
+      const updated = [...newRecs, ...records];
       computeAndSetLocal(updated);
       localStorage.setItem(STORAGE_KEYS.LOCAL_RECORDS, JSON.stringify(updated));
 
-      if (existing) {
+      if (anyDuplicate) {
         playAudioFeedback('duplicate', isSoundEnabled);
-        showToast(`⚠️ Duplicate recorded (offline) for "${barcode}"!`, 'warning');
+        showToast(`⚠️ Scans recorded (offline, duplicates found)!`, 'warning');
       } else {
         playAudioFeedback('success', isSoundEnabled);
-        showToast(`✓ Added "${barcode}" (offline)`, 'success');
+        showToast(`✓ Added ${barcodeList.length} scan(s) (offline)`, 'success');
       }
     }
   };
 
   // Save Edit
-  const handleSaveEdit = async (id, name, barcode) => {
+  const handleSaveEdit = async (id, name, barcode, crNumber = '') => {
     try {
       const res = await fetch(`${API_BASE}/api/records/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, barcode })
+        body: JSON.stringify({ name, barcode, crNumber })
       });
 
       if (res.ok) {
@@ -180,7 +205,7 @@ export default function App() {
       }
     } catch (err) {
       const updated = records.map((r) =>
-        r.id === id ? { ...r, name, barcode } : r
+        r.id === id ? { ...r, name, barcode, crNumber } : r
       );
       computeAndSetLocal(updated);
       localStorage.setItem(STORAGE_KEYS.LOCAL_RECORDS, JSON.stringify(updated));
@@ -258,6 +283,7 @@ export default function App() {
         isSoundEnabled={isSoundEnabled}
         setIsSoundEnabled={setIsSoundEnabled}
         frequencyMap={frequencyMap}
+        records={records}
       />
 
       {/* 3. 3-Column Stats Card */}
@@ -270,6 +296,7 @@ export default function App() {
       <RecordsTable
         records={records}
         stats={stats}
+        isLoading={isLoading}
         currentFilter={currentFilter}
         setFilter={setCurrentFilter}
         onEdit={(rec) => setEditingRecord(rec)}

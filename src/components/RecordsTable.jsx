@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 export default function RecordsTable({
   records,
   stats,
+  isLoading,
   currentFilter,
   setFilter,
   onEdit,
@@ -20,7 +21,8 @@ export default function RecordsTable({
         const q = searchQuery.toLowerCase().trim();
         const matchName = (r.name || '').toLowerCase().includes(q);
         const matchBarcode = (r.barcode || '').toLowerCase().includes(q);
-        if (!matchName && !matchBarcode) return false;
+        const matchCrNumber = (r.crNumber || '').toLowerCase().includes(q);
+        if (!matchName && !matchBarcode && !matchCrNumber) return false;
       }
 
       return true;
@@ -36,12 +38,12 @@ export default function RecordsTable({
 
     const tabName = currentFilter === 'duplicate' ? 'Duplicates' : currentFilter === 'unique' ? 'Unique' : 'All_Records';
 
-    let csv = 'S.No,Name,Barcode / Serial Number,Status,Occurrences,Date Time\n';
+    let csv = 'S.No,Name,CR Number,Barcode / Serial Number,Status,Occurrences,Date Time\n';
     filteredRecords.forEach((r, idx) => {
       const status = r.isDuplicate ? 'Duplicate' : 'Unique';
       const count = r.count || (r.isDuplicate ? 2 : 1);
       const dateFormatted = new Date(r.timestamp).toLocaleString();
-      csv += `"${idx + 1}","${escapeCsv(r.name)}","${escapeCsv(r.barcode)}","${status}","${count}","${dateFormatted}"\n`;
+      csv += `"${idx + 1}","${escapeCsv(r.name)}","${escapeCsv(r.crNumber || '')}","${escapeCsv(r.barcode)}","${status}","${count}","${dateFormatted}"\n`;
     });
 
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -75,6 +77,7 @@ export default function RecordsTable({
         <tr class="${r.isDuplicate ? 'duplicate-row' : ''}">
           <td style="text-align: center;">${idx + 1}</td>
           <td><b>${escapeHtml(r.name)}</b></td>
+          <td style="font-weight: 600; color: #0284c7;">${escapeHtml(r.crNumber || '-')}</td>
           <td style="font-family: monospace; font-weight: bold; font-size: 14px;">${escapeHtml(r.barcode)}</td>
           <td style="text-align: center;">
             <span class="badge ${r.isDuplicate ? 'badge-dup' : 'badge-uniq'}">
@@ -131,6 +134,7 @@ export default function RecordsTable({
             <tr>
               <th style="width: 50px; text-align: center;">#</th>
               <th>Name</th>
+              <th>CR Number</th>
               <th>Barcode / Serial</th>
               <th style="width: 100px; text-align: center;">Status</th>
               <th style="width: 80px; text-align: center;">Count</th>
@@ -235,7 +239,7 @@ export default function RecordsTable({
             <input
               type="text"
               className="search-input"
-              placeholder="Search name or barcode..."
+              placeholder="Search name, CR number, or barcode..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -269,7 +273,12 @@ export default function RecordsTable({
 
       {/* Records List */}
       <div className="records-container">
-        {filteredRecords.length === 0 ? (
+        {isLoading ? (
+          <div className="loading-records-box">
+            <div className="spinner-loader"></div>
+            <p>Loading records...</p>
+          </div>
+        ) : filteredRecords.length === 0 ? (
           <div className="empty-records-box">
             <i className="fa-solid fa-inbox"></i>
             <h4>No Records</h4>
@@ -288,7 +297,14 @@ export default function RecordsTable({
               className={`record-row-card ${r.isDuplicate ? 'is-duplicate-row' : ''}`}
             >
               <div className="record-meta-main">
-                <div className="record-name-title">{r.name}</div>
+                <div className="record-title-row">
+                  <span className="record-name-title">{r.name}</span>
+                  {r.crNumber && (
+                    <span className="cr-number-badge" title="CR Number">
+                      <i className="fa-solid fa-hashtag"></i> {r.crNumber}
+                    </span>
+                  )}
+                </div>
                 <div className="record-barcode-wrap">
                   <span className="barcode-badge-pill">
                     <i className="fa-solid fa-barcode"></i> {r.barcode}

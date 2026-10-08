@@ -22,6 +22,11 @@ export default function DeleteModal({ record, onClose, onConfirm }) {
             <div style={{ marginBottom: '4px' }}>
               <span style={{ color: '#64748b' }}>Name:</span> <b>{record.name}</b>
             </div>
+            {record.crNumber && (
+              <div style={{ marginBottom: '4px' }}>
+                <span style={{ color: '#64748b' }}>CR Number:</span> <b style={{ color: '#0284c7' }}>{record.crNumber}</b>
+              </div>
+            )}
             <div>
               <span style={{ color: '#64748b' }}>Barcode:</span> <code style={{ fontWeight: 700, color: '#1e293b' }}>{record.barcode}</code>
             </div>
