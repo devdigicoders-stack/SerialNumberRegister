@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import PatientDetailModal from './PatientDetailModal';
 
 export default function RecordsTable({
   records,
@@ -332,7 +333,9 @@ export default function RecordsTable({
               return (
                 <div
                   key={r.id || idx}
-                  className={`record-row-card ${r.isDuplicate ? 'is-duplicate-row' : ''}`}
+                  className={`record-row-card clickable-card ${r.isDuplicate ? 'is-duplicate-row' : ''}`}
+                  onClick={() => setSelectedRecordForDetail(r)}
+                  title="Click to view detailed scans list"
                 >
                   <div className="record-meta-main" style={{ width: '100%' }}>
                     {/* Header Row: Name, CR Badge, Stats Chips, Time */}
@@ -391,17 +394,23 @@ export default function RecordsTable({
                   </div>
 
                   {/* Card Actions */}
-                  <div className="record-actions-group">
+                  <div className="record-actions-group" onClick={(e) => e.stopPropagation()}>
                     <button
                       className="btn-record-action btn-edit"
-                      onClick={() => onEdit(r)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(r);
+                      }}
                       title="Edit this patient record"
                     >
                       <i className="fa-solid fa-pen"></i>
                     </button>
                     <button
                       className="btn-record-action btn-del"
-                      onClick={() => onDelete(r)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(r);
+                      }}
                       title="Delete this patient record"
                     >
                       <i className="fa-solid fa-trash"></i>
@@ -413,7 +422,23 @@ export default function RecordsTable({
           )}
         </div>
       </section>
+
+      {/* Patient Scans Detail Modal */}
+      <PatientDetailModal
+        record={selectedRecordForDetail}
+        allRecords={records}
+        onClose={() => setSelectedRecordForDetail(null)}
+        onEdit={(rec) => {
+          setSelectedRecordForDetail(null);
+          onEdit(rec);
+        }}
+        onDelete={(rec) => {
+          setSelectedRecordForDetail(null);
+          onDelete(rec);
+        }}
+      />
     </>
   );
 }
+
 

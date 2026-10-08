@@ -648,13 +648,14 @@ body {
   transition: background 0.15s;
 }
 
-.record-row-card.is-duplicate-row {
-  background: #fffbeb;
-  border-color: #fde68a;
+.record-row-card.clickable-card {
+  cursor: pointer;
 }
 
-.record-row-card:hover {
-  box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+.record-row-card.clickable-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
 .record-meta-main {
