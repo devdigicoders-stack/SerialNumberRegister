@@ -77,20 +77,47 @@ export default function App() {
   const computeAndSetLocal = (recs) => {
     const map = {};
     recs.forEach((r) => {
-      const code = (r.barcode || '').trim();
-      if (code) map[code] = (map[code] || 0) + 1;
-    });
-
-    const enriched = recs.map((r) => {
-      const count = map[(r.barcode || '').trim()] || 1;
-      return { ...r, count, isDuplicate: count > 1 };
+      const list = Array.isArray(r.barcodes) && r.barcodes.length > 0 
+        ? r.barcodes 
+        : (r.barcode ? [r.barcode] : []);
+      list.forEach((code) => {
+        const c = (code || '').trim();
+        if (c) map[c] = (map[c] || 0) + 1;
+      });
     });
 
     let duplicateEntries = 0;
     let uniqueOnlyCount = 0;
-    enriched.forEach((r) => {
-      if (r.isDuplicate) duplicateEntries++;
+
+    const enriched = recs.map((r) => {
+      const list = Array.isArray(r.barcodes) && r.barcodes.length > 0 
+        ? r.barcodes 
+        : (r.barcode ? [r.barcode] : []);
+
+      let dupCount = 0;
+      let uniqCount = 0;
+      const details = list.map((code) => {
+        const c = (code || '').trim();
+        const cnt = map[c] || 1;
+        if (cnt > 1) dupCount++;
+        else uniqCount++;
+        return { code: c, count: cnt, isDuplicate: cnt > 1 };
+      });
+
+      const isDup = dupCount > 0;
+      if (isDup) duplicateEntries++;
       else uniqueOnlyCount++;
+
+      return {
+        ...r,
+        barcodes: list,
+        barcode: list[0] || '',
+        barcodeDetails: details,
+        totalScans: list.length,
+        uniqueCount: uniqCount,
+        duplicateCount: dupCount,
+        isDuplicate: isDup
+      };
     });
 
     setRecords(enriched);
@@ -121,7 +148,7 @@ export default function App() {
     showToast('Logged out successfully.', 'info');
   };
 
-  // Add Entry (supports single barcode or multiple scans array)
+  // Add Entry (supports single barcode or multiple scans array in one record)
   const handleAddEntry = async (name, barcodes, crNumber = '') => {
     const barcodeList = Array.isArray(barcodes)
       ? barcodes.map((b) => String(b).trim()).filter(Boolean)
@@ -141,17 +168,13 @@ export default function App() {
         if (data.isDuplicate) {
           playAudioFeedback('duplicate', isSoundEnabled);
           showToast(
-            barcodeList.length > 1
-              ? `⚠️ ${barcodeList.length} scans saved (Includes duplicates)!`
-              : `⚠️ Duplicate recorded for "${barcodeList[0]}"!`,
+            `⚠️ Scans saved for ${name} (${data.record?.duplicateCount || 1} duplicates found)!`,
             'warning'
           );
         } else {
           playAudioFeedback('success', isSoundEnabled);
           showToast(
-            barcodeList.length > 1
-              ? `✓ Added ${barcodeList.length} scans for ${name}`
-              : `✓ Added "${barcodeList[0]}" for ${name}`,
+            `✓ Added ${barcodeList.length} scan(s) for ${name}`,
             'success'
           );
         }
@@ -160,40 +183,34 @@ export default function App() {
         showToast('Error adding record.', 'danger');
       }
     } catch (err) {
-      // Offline local fallback
-      let anyDuplicate = false;
-      const newRecs = barcodeList.map((code, idx) => {
-        if ((frequencyMap[code] || 0) > 0) anyDuplicate = true;
-        return {
-          id: 'rec_' + (Date.now() + idx),
-          name,
-          crNumber,
-          barcode: code,
-          timestamp: new Date().toISOString()
-        };
-      });
+      // Offline local fallback: 1 record with all barcodes
+      const newRec = {
+        id: 'rec_' + Date.now(),
+        name,
+        crNumber,
+        barcodes: barcodeList,
+        barcode: barcodeList[0] || '',
+        timestamp: new Date().toISOString()
+      };
 
-      const updated = [...newRecs, ...records];
+      const updated = [newRec, ...records];
       computeAndSetLocal(updated);
       localStorage.setItem(STORAGE_KEYS.LOCAL_RECORDS, JSON.stringify(updated));
-
-      if (anyDuplicate) {
-        playAudioFeedback('duplicate', isSoundEnabled);
-        showToast(`⚠️ Scans recorded (offline, duplicates found)!`, 'warning');
-      } else {
-        playAudioFeedback('success', isSoundEnabled);
-        showToast(`✓ Added ${barcodeList.length} scan(s) (offline)`, 'success');
-      }
+      showToast(`✓ Added ${barcodeList.length} scan(s) (offline)`, 'success');
     }
   };
 
   // Save Edit
-  const handleSaveEdit = async (id, name, barcode, crNumber = '') => {
+  const handleSaveEdit = async (id, name, barcodes, crNumber = '') => {
+    const barcodeList = Array.isArray(barcodes)
+      ? barcodes.map((b) => String(b).trim()).filter(Boolean)
+      : [String(barcodes).trim()].filter(Boolean);
+
     try {
       const res = await fetch(`${API_BASE}/api/records/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, barcode, crNumber })
+        body: JSON.stringify({ name, barcodes: barcodeList, crNumber })
       });
 
       if (res.ok) {
@@ -205,7 +222,15 @@ export default function App() {
       }
     } catch (err) {
       const updated = records.map((r) =>
-        r.id === id ? { ...r, name, barcode, crNumber } : r
+        r.id === id
+          ? {
+              ...r,
+              name,
+              barcodes: barcodeList,
+              barcode: barcodeList[0] || '',
+              crNumber
+            }
+          : r
       );
       computeAndSetLocal(updated);
       localStorage.setItem(STORAGE_KEYS.LOCAL_RECORDS, JSON.stringify(updated));
