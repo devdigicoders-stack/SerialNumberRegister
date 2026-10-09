@@ -148,7 +148,7 @@ export default function App() {
     showToast('Logged out successfully.', 'info');
   };
 
-  // Add Entry (supports single barcode or multiple scans array in one record)
+  // Add Entry (supports single barcode or multiple scans array in one record, auto-grouping by CR number)
   const handleAddEntry = async (name, barcodes, crNumber = '') => {
     const barcodeList = Array.isArray(barcodes)
       ? barcodes.map((b) => String(b).trim()).filter(Boolean)
@@ -165,7 +165,13 @@ export default function App() {
 
       if (res.ok) {
         const data = await res.json();
-        if (data.isDuplicate) {
+        if (data.merged) {
+          playAudioFeedback(data.isDuplicate ? 'duplicate' : 'success', isSoundEnabled);
+          showToast(
+            `🔗 Existing CR #${crNumber} found: Added ${barcodeList.length} scan(s) into this record! (Total scans: ${data.record?.totalScans || barcodeList.length})`,
+            data.isDuplicate ? 'warning' : 'success'
+          );
+        } else if (data.isDuplicate) {
           playAudioFeedback('duplicate', isSoundEnabled);
           showToast(
             `⚠️ Scans saved for ${name} (${data.record?.duplicateCount || 1} duplicates found)!`,
@@ -183,20 +189,55 @@ export default function App() {
         showToast('Error adding record.', 'danger');
       }
     } catch (err) {
-      // Offline local fallback: 1 record with all barcodes
-      const newRec = {
-        id: 'rec_' + Date.now(),
-        name,
-        crNumber,
-        barcodes: barcodeList,
-        barcode: barcodeList[0] || '',
-        timestamp: new Date().toISOString()
-      };
+      // Offline local fallback: check if CR Number already exists in local records
+      const cleanCr = (crNumber || '').trim();
+      let updated = [];
+      let merged = false;
 
-      const updated = [newRec, ...records];
+      if (cleanCr) {
+        const existingIdx = records.findIndex(
+          (r) => (r.crNumber || '').trim().toLowerCase() === cleanCr.toLowerCase()
+        );
+        if (existingIdx !== -1) {
+          const existing = records[existingIdx];
+          const existingBarcodes = Array.isArray(existing.barcodes) && existing.barcodes.length > 0
+            ? existing.barcodes
+            : (existing.barcode ? [existing.barcode] : []);
+          const combined = [...existingBarcodes, ...barcodeList];
+
+          const updatedRec = {
+            ...existing,
+            name: name || existing.name,
+            crNumber: cleanCr,
+            barcodes: combined,
+            barcode: combined[0] || '',
+            timestamp: new Date().toISOString()
+          };
+
+          updated = records.map((r, i) => (i === existingIdx ? updatedRec : r));
+          merged = true;
+        }
+      }
+
+      if (!merged) {
+        const newRec = {
+          id: 'rec_' + Date.now(),
+          name,
+          crNumber: cleanCr,
+          barcodes: barcodeList,
+          barcode: barcodeList[0] || '',
+          timestamp: new Date().toISOString()
+        };
+        updated = [newRec, ...records];
+      }
+
       computeAndSetLocal(updated);
       localStorage.setItem(STORAGE_KEYS.LOCAL_RECORDS, JSON.stringify(updated));
-      showToast(`✓ Added ${barcodeList.length} scan(s) (offline)`, 'success');
+      if (merged) {
+        showToast(`🔗 Merged ${barcodeList.length} scan(s) into existing CR #${cleanCr} (offline)`, 'info');
+      } else {
+        showToast(`✓ Added ${barcodeList.length} scan(s) (offline)`, 'success');
+      }
     }
   };
 

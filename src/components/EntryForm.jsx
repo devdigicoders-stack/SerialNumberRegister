@@ -130,6 +130,29 @@ export default function EntryForm({
     }
   };
 
+  const matchedExistingRecord = useMemo(() => {
+    const cleanCr = (crNumber || '').trim().toLowerCase();
+    if (!cleanCr) return null;
+    return (
+      records.find(
+        (r) => (r.crNumber || '').trim().toLowerCase() === cleanCr
+      ) || null
+    );
+  }, [crNumber, records]);
+
+  const handleCrNumberChange = (val) => {
+    setCrNumber(val);
+    const clean = val.trim().toLowerCase();
+    if (clean) {
+      const match = records.find(
+        (r) => (r.crNumber || '').trim().toLowerCase() === clean
+      );
+      if (match && !name.trim()) {
+        setName(match.name);
+      }
+    }
+  };
+
   const handleClear = () => {
     setBarcodes(['']);
     focusScanner(0);
@@ -171,10 +194,20 @@ export default function EntryForm({
               id="entryCrNumber"
               className="input-box"
               value={crNumber}
-              onChange={(e) => setCrNumber(e.target.value)}
+              onChange={(e) => handleCrNumberChange(e.target.value)}
               placeholder="Enter CR number"
               autoComplete="off"
             />
+            {matchedExistingRecord && (
+              <div className="cr-match-hint">
+                <span className="cr-match-badge">Group Match</span>
+                <span>
+                  Existing patient: <strong>{matchedExistingRecord.name}</strong> (
+                  {matchedExistingRecord.barcodes?.length || 1} existing scan(s)). Naye
+                  scans isi record me mix/group ho jayenge.
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Multiple Barcode Scans */}
