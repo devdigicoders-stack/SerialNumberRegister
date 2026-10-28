@@ -12,13 +12,34 @@ export default function PatientDetailModal({
   const barcodeDetails = useMemo(() => {
     if (!record) return [];
 
+    if (Array.isArray(record.barcodeDetails) && record.barcodeDetails.length > 0) {
+      return record.barcodeDetails.map((b, index) => {
+        const code = (b.code || '').trim();
+        const matchingRecords = allRecords.filter((r) => {
+          const list = Array.isArray(r.barcodes) && r.barcodes.length > 0 ? r.barcodes : [r.barcode || ''];
+          return list.some((item) => (item || '').trim().toLowerCase() === code.toLowerCase());
+        });
+
+        return {
+          index,
+          code,
+          totalOccurrences: b.count || 1,
+          occurrence: b.occurrence,
+          isDuplicate: b.isDuplicate,
+          matchingRecords
+        };
+      });
+    }
+
     const barcodeList = Array.isArray(record.barcodes) && record.barcodes.length > 0
       ? record.barcodes
       : [record.barcode || ''];
 
     // Map each barcode with past records
+    const seen = {};
     return barcodeList.map((rawCode, index) => {
       const code = (rawCode || '').trim();
+      seen[code] = (seen[code] || 0) + 1;
       
       // Find all records across the system containing this barcode
       const matchingRecords = allRecords.filter((r) => {
@@ -41,12 +62,12 @@ export default function PatientDetailModal({
         });
       });
 
-      const isDuplicate = totalOccurrences > 1;
+      const isDuplicate = seen[code] > 1 || (totalOccurrences > seen[code]);
 
       return {
         index,
         code,
-        totalOccurrences,
+        totalOccurrences: totalOccurrences || 1,
         isDuplicate,
         matchingRecords
       };

@@ -75,8 +75,13 @@ export default function App() {
   }, []);
 
   const computeAndSetLocal = (recs) => {
+    // Sort chronologically (oldest first) to establish true first occurrence
+    const chronological = [...recs].sort(
+      (a, b) => new Date(a.createdAt || a.timestamp || 0) - new Date(b.createdAt || b.timestamp || 0)
+    );
+
     const map = {};
-    recs.forEach((r) => {
+    chronological.forEach((r) => {
       const list = Array.isArray(r.barcodes) && r.barcodes.length > 0 
         ? r.barcodes 
         : (r.barcode ? [r.barcode] : []);
@@ -86,10 +91,12 @@ export default function App() {
       });
     });
 
+    const seenCounts = {};
     let duplicateEntries = 0;
     let uniqueOnlyCount = 0;
+    const enrichedMap = new Map();
 
-    const enriched = recs.map((r) => {
+    chronological.forEach((r) => {
       const list = Array.isArray(r.barcodes) && r.barcodes.length > 0 
         ? r.barcodes 
         : (r.barcode ? [r.barcode] : []);
@@ -98,18 +105,22 @@ export default function App() {
       let uniqCount = 0;
       const details = list.map((code) => {
         const c = (code || '').trim();
-        const cnt = map[c] || 1;
-        if (cnt > 1) dupCount++;
+        seenCounts[c] = (seenCounts[c] || 0) + 1;
+        const occ = seenCounts[c];
+        const isDup = occ > 1; // 1st occurrence is the original unique scan, subsequent are duplicates
+        if (isDup) dupCount++;
         else uniqCount++;
-        return { code: c, count: cnt, isDuplicate: cnt > 1 };
+        return { code: c, count: map[c] || 1, occurrence: occ, isDuplicate: isDup };
       });
 
       const isDup = dupCount > 0;
       if (isDup) duplicateEntries++;
       else uniqueOnlyCount++;
 
-      return {
+      const id = r.id || (r._id ? r._id.toString() : '');
+      const enrichedObj = {
         ...r,
+        id,
         barcodes: list,
         barcode: list[0] || '',
         barcodeDetails: details,
@@ -118,13 +129,21 @@ export default function App() {
         duplicateCount: dupCount,
         isDuplicate: isDup
       };
+      enrichedMap.set(id, enrichedObj);
+    });
+
+    const enriched = recs.map((r) => {
+      const id = r.id || (r._id ? r._id.toString() : '');
+      return enrichedMap.get(id) || r;
     });
 
     setRecords(enriched);
     setFrequencyMap(map);
     setStats({
       totalRecords: recs.length,
-      uniqueSerials: Object.keys(map).length,
+      uniqueRecords: uniqueOnlyCount,
+      uniqueSerials: uniqueOnlyCount,
+      distinctSerials: Object.keys(map).length,
       duplicateEntries,
       uniqueOnlyCount
     });

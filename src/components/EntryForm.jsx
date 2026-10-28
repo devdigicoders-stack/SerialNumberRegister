@@ -54,22 +54,16 @@ export default function EntryForm({
 
   // Compute live duplicate vs correct analysis for current scans
   const { validScansList, totalCount, duplicateCount, correctCount } = useMemo(() => {
-    const batchCounts = {};
-    barcodes.forEach((b) => {
-      const code = (b || '').trim();
-      if (code) {
-        batchCounts[code] = (batchCounts[code] || 0) + 1;
-      }
-    });
-
+    const seenInBatch = {};
     const validList = barcodes
       .map((b, idx) => {
         const code = (b || '').trim();
         if (!code) return null;
+        seenInBatch[code] = (seenInBatch[code] || 0) + 1;
+        const currentOccurrence = seenInBatch[code];
         const dbCount = frequencyMap[code] || 0;
-        const currentBatchCount = batchCounts[code] || 0;
-        const isDuplicate = dbCount > 0 || currentBatchCount > 1;
-        return { index: idx, code, isDuplicate, dbCount, currentBatchCount };
+        const isDuplicate = dbCount > 0 || currentOccurrence > 1;
+        return { index: idx, code, isDuplicate, dbCount, currentOccurrence };
       })
       .filter(Boolean);
 
@@ -84,26 +78,34 @@ export default function EntryForm({
     };
   }, [barcodes, frequencyMap]);
 
-  const getLiveStatus = (code) => {
+  const getLiveStatus = (code, index) => {
     const trimmed = (code || '').trim();
     if (!trimmed) return null;
 
-    // Check duplicate in DB or current list
-    const currentOccurrences = barcodes.filter((b) => (b || '').trim() === trimmed).length;
+    // Check duplicate in DB
     const dbCount = frequencyMap[trimmed] || 0;
-
     if (dbCount > 0) {
       return {
         isDup: true,
         text: `⚠️ Duplicate (${dbCount}x in DB)`
       };
     }
-    if (currentOccurrences > 1) {
+
+    // Check occurrences before this index in the current inputs
+    let priorCount = 0;
+    for (let i = 0; i < index; i++) {
+      if ((barcodes[i] || '').trim() === trimmed) {
+        priorCount++;
+      }
+    }
+
+    if (priorCount > 0) {
       return {
         isDup: true,
-        text: `⚠️ Duplicate in list (${currentOccurrences}x)`
+        text: `⚠️ Duplicate (${priorCount + 1}x in list)`
       };
     }
+
     return {
       isDup: false,
       text: '✓ Correct'
@@ -259,7 +261,7 @@ export default function EntryForm({
 
             <div className="barcode-inputs-container">
               {barcodes.map((code, idx) => {
-                const liveStatus = getLiveStatus(code);
+                const liveStatus = getLiveStatus(code, idx);
                 return (
                   <div key={idx} className="barcode-input-row">
                     <div style={{ flex: 1, position: 'relative' }}>

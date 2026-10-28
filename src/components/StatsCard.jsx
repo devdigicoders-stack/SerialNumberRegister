@@ -1,7 +1,15 @@
 import React from 'react';
 
 export default function StatsCard({ stats, onSelectFilter }) {
-  const { totalRecords = 0, uniqueSerials = 0, duplicateEntries = 0 } = stats || {};
+  const {
+    totalRecords = 0,
+    uniqueOnlyCount,
+    uniqueRecords,
+    uniqueSerials = 0,
+    duplicateEntries = 0
+  } = stats || {};
+
+  const uniqueVal = uniqueOnlyCount !== undefined ? uniqueOnlyCount : (uniqueRecords !== undefined ? uniqueRecords : uniqueSerials);
 
   return (
     <section className="app-card">
@@ -18,10 +26,10 @@ export default function StatsCard({ stats, onSelectFilter }) {
         <div
           className="stat-item"
           onClick={() => onSelectFilter('unique')}
-          title="Click to view unique serials"
+          title="Click to view unique serials/records"
         >
           <div className="stat-item-label">Unique serials</div>
-          <div className="stat-item-value">{uniqueSerials}</div>
+          <div className="stat-item-value">{uniqueVal}</div>
         </div>
 
         <div

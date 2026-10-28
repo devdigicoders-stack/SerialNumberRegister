@@ -14,28 +14,23 @@ export default function ScansReviewModal({
   const [filter, setFilter] = useState('all'); // 'all' | 'correct' | 'duplicate'
 
   const analyzedScans = useMemo(() => {
-    // Count occurrences inside the current batch
-    const batchCounts = {};
-    barcodes.forEach((b) => {
-      const code = (b || '').trim();
-      if (code) {
-        batchCounts[code] = (batchCounts[code] || 0) + 1;
-      }
-    });
+    const seenInBatch = {};
 
     return barcodes
       .map((rawCode, originalIndex) => {
         const code = (rawCode || '').trim();
         if (!code) return null;
 
+        seenInBatch[code] = (seenInBatch[code] || 0) + 1;
+        const currentBatchCount = seenInBatch[code];
         const dbCount = frequencyMap[code] || 0;
-        const currentBatchCount = batchCounts[code] || 0;
         const isDuplicate = dbCount > 0 || currentBatchCount > 1;
 
         // Find past records with this barcode
-        const pastEntries = records.filter(
-          (r) => (r.barcode || '').trim().toLowerCase() === code.toLowerCase()
-        );
+        const pastEntries = records.filter((r) => {
+          const list = Array.isArray(r.barcodes) && r.barcodes.length > 0 ? r.barcodes : [r.barcode || ''];
+          return list.some((b) => (b || '').trim().toLowerCase() === code.toLowerCase());
+        });
 
         return {
           originalIndex,
